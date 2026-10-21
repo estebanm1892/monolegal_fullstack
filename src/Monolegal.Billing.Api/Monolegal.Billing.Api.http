@@ -1,0 +1,6 @@
+@Monolegal.Billing.Api_HostAddress = http://localhost:5091
+
+GET {{Monolegal.Billing.Api_HostAddress}}/openapi/v1.json
+Accept: application/json
+
+###

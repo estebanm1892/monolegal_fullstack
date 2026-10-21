@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Monolegal.Billing.Api/Monolegal.Billing.Api.csproj" />
+    <Project Path="src/Monolegal.Billing.Application/Monolegal.Billing.Application.csproj" />
+    <Project Path="src/Monolegal.Billing.Domain/Monolegal.Billing.Domain.csproj" />
+    <Project Path="src/Monolegal.Billing.Infrastructure/Monolegal.Billing.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Monolegal.Billing.IntegrationTests/Monolegal.Billing.IntegrationTests.csproj" />
+    <Project Path="tests/Monolegal.Billing.UnitTests/Monolegal.Billing.UnitTests.csproj" />
+  </Folder>
+</Solution>
