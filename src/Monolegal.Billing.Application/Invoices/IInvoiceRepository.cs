@@ -32,8 +32,8 @@ public interface IInvoiceRepository
         CancellationToken cancellationToken);
 
     /// <summary>
-    /// Compare-and-set: updates the persisted state only when id, previous state and token still match.
-    /// Removes the claim on success.
+    /// Compare-and-set: updates the persisted state only when id, previous state, token and
+    /// <c>Dispatching</c> phase still match. Removes the claim on success.
     /// </summary>
     Task<bool> TryCompleteTransitionAsync(
         InvoiceId id,

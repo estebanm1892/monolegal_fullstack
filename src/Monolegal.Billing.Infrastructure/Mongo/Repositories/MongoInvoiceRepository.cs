@@ -172,7 +172,8 @@ public sealed class MongoInvoiceRepository(MongoContext context) : IInvoiceRepos
     {
         var filter = Builders<InvoiceDocument>.Filter.Eq(document => document.Id, id.Value)
             & Builders<InvoiceDocument>.Filter.Eq(document => document.Estado, expectedState.Persisted)
-            & Builders<InvoiceDocument>.Filter.Eq(document => document.Processing!.Token, token);
+            & Builders<InvoiceDocument>.Filter.Eq(document => document.Processing!.Token, token)
+            & Builders<InvoiceDocument>.Filter.Eq(document => document.Processing!.Phase, ClaimPhases.Dispatching);
 
         var update = Builders<InvoiceDocument>.Update
             .Set(document => document.Estado, nextState.Persisted)

@@ -1,4 +1,4 @@
-﻿using MongoDB.Bson;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using Monolegal.Billing.Application.Customers;
 using Monolegal.Billing.Application.Invoices;
@@ -226,7 +226,7 @@ public class PersistenceTests(MongoFixture fixture)
     }
 
     [Fact]
-    public async Task CasRequiresMatchingIdStateAndToken()
+    public async Task CasRequiresDispatchingPhaseAndMatchingIdStateAndToken()
     {
         await using var db = MongoTestContext.Create(fixture);
         await db.Seeder.SeedAsync(reset: false, CancellationToken.None);
@@ -235,6 +235,10 @@ public class PersistenceTests(MongoFixture fixture)
         var next = InvoiceState.SegundoRecordatorio;
         await db.Invoices.TryClaimAsync(invoiceId, previous, Request("cas-token", Now), CancellationToken.None);
 
+        var fromClaimed = await db.Invoices.TryCompleteTransitionAsync(
+            invoiceId, previous, "cas-token", next, Now, CancellationToken.None);
+        var dispatching = await db.Invoices.TryBeginDispatchAsync(
+            invoiceId, "cas-token", Now.AddMinutes(5), CancellationToken.None);
         var wrongState = await db.Invoices.TryCompleteTransitionAsync(
             invoiceId, InvoiceState.SegundoRecordatorio, "cas-token", InvoiceState.Desactivado, Now, CancellationToken.None);
         var wrongToken = await db.Invoices.TryCompleteTransitionAsync(
@@ -244,6 +248,8 @@ public class PersistenceTests(MongoFixture fixture)
         var replayed = await db.Invoices.TryCompleteTransitionAsync(
             invoiceId, previous, "cas-token", next, Now.AddMinutes(2), CancellationToken.None);
 
+        Assert.False(fromClaimed);
+        Assert.True(dispatching);
         Assert.False(wrongState);
         Assert.False(wrongToken);
         Assert.True(completed);
