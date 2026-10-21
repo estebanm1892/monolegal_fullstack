@@ -238,7 +238,7 @@ public sealed class ProcessInvoiceReminders(
         if (!await TryUpdateAttemptAsync(accepted, cancellationToken))
         {
             return await MarkNeedsReviewAsync(
-                dispatching,
+                accepted,
                 "smtp_acceptance_audit_failed",
                 "SMTP accepted the message but acceptance could not be persisted.",
                 cancellationToken);

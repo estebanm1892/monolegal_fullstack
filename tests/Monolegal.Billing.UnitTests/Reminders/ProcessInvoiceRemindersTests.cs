@@ -144,6 +144,10 @@ public class ProcessInvoiceRemindersTests
         Assert.Single(fixture.Email.Messages);
         Assert.Equal(0, fixture.Invoices.CompleteCount);
         Assert.Equal(0, fixture.Invoices.ReleaseCount);
+        var attempt = Assert.Single(fixture.Audit.Stored.Values);
+        Assert.Equal(NotificationAttemptStatus.NeedsReview, attempt.Status);
+        Assert.NotNull(attempt.SmtpAcceptedAt);
+        Assert.Equal("message-1@example.test", attempt.MessageId);
     }
 
     [Fact]
