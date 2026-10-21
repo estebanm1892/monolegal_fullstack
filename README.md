@@ -105,4 +105,4 @@ La DI de ejemplo usa un reloj reemplazable. La arquitectura prevista está en [A
 
 Detener API y Angular con Ctrl+C. Desde la raíz, `docker compose stop` detiene Mongo y Mailpit sin eliminar el volumen Mongo. No usar `down -v` salvo que se quiera eliminar explícitamente los datos de prueba. Mailpit no tiene volumen persistente configurado: recrear su contenedor puede perder mensajes capturados.
 
-**Estado:** Fase 4 completada en backend. El contrato de correo, las plantillas, el adaptador MailKit limitado a Mailpit local y la orquestación tipada del lote existen y tienen pruebas, incluida una puerta real contra Mailpit y Mongo (4 mensajes, 4 transiciones, 2 intactas). **Siguiente fase, solo con aprobación:** endpoints HTTP de negocio (Fase 5) y dashboard Angular (Fase 6). No hay ejecución automática ni envío a direcciones reales.
+**Estado:** Fase 4 y Fase 5 completadas en backend. Correo Mailpit, orquestación de recordatorios y endpoints REST (clientes, facturas, resumen, procesamiento, health) existen y tienen pruebas. **Siguiente fase, solo con aprobación:** dashboard Angular (Fase 6). No hay ejecución automática ni envío a direcciones reales.
