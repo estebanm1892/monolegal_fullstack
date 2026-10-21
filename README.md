@@ -1,6 +1,6 @@
 # Monolegal Billing — entorno de desarrollo
 
-Monorepo .NET + Angular para la prueba técnica Monolegal. **La Fase 1 prepara el entorno; todavía no procesa facturas ni envía correos.** La evidencia ejecutada y las limitaciones están en [docs/RESULTS.md](docs/RESULTS.md).
+Monorepo .NET + Angular para la prueba técnica Monolegal. **El dominio, las reglas de transición y la persistencia MongoDB con seed ya existen; todavía no se envían correos ni hay endpoints de negocio.** La evidencia ejecutada y las limitaciones están en [docs/RESULTS.md](docs/RESULTS.md).
 
 ## Requisitos
 
@@ -34,9 +34,27 @@ npm start -- --host localhost --port 4200
 | Angular | http://localhost:4200 | Página inicial estática |
 | API OpenAPI | http://localhost:5091/openapi/v1.json | Documento JSON, solo en Development |
 | Mailpit | http://localhost:8025 | Interfaz de captura local |
-| MongoDB | `mongodb://localhost:27017` | Servicio local sin seed |
+| MongoDB | `mongodb://localhost:27017` | Servicio local; requiere seed explícito |
 
-La raíz de la API y las rutas de negocio devuelven 404: aún no están implementadas. OpenAPI no incluye Swagger UI. No hay scheduler, seed automático ni envío al iniciar.
+La raíz de la API y las rutas de negocio devuelven 404: aún no están implementadas. OpenAPI no incluye Swagger UI. No hay scheduler ni envío al iniciar. El seed **no** se ejecuta al iniciar la API; requiere el comando explícito de la sección siguiente.
+
+## Seed de desarrollo (Fase 3)
+
+Con Mongo levantado y la API compilada:
+
+```powershell
+dotnet run --project src/Monolegal.Billing.Api -- --seed
+```
+
+Resultado esperado: `customersInserted=3, invoicesInserted=6, customerCount=3, invoiceCount=6`. Repetir el comando no duplica documentos ni sobrescribe estados ya procesados (`customersInserted=0, invoicesInserted=0`).
+
+Para restaurar los estados iniciales de las 6 facturas de demostración:
+
+```powershell
+dotnet run --project src/Monolegal.Billing.Api -- --seed --reset
+```
+
+`--reset` solo elimina los ids documentados del seed, es exclusivo del entorno Development y no debe usarse contra datos reales. La conexión se toma de `Mongo:ConnectionString` (`appsettings.Development.json`) y puede sobrescribirse con la variable de entorno `MONGO_CONNECTION_STRING`.
 
 ### Visual Studio
 
@@ -44,7 +62,7 @@ Abrir `Monolegal.Billing.slnx`, seleccionar `Monolegal.Billing.Api` como proyect
 
 ### Configuración y seguridad
 
-`.env.example` es una plantilla sin secretos para las fases de persistencia y correo. Copiarla a `.env` es opcional en Fase 1; **la API no carga archivos `.env` ni consume esas claves todavía**. Compose fija los puertos de Mongo/Mailpit; los perfiles de `launchSettings.json` fijan los de la API. Las claves provisionales de la plantilla no modifican esos puertos ni habilitan CORS.
+`.env.example` es una plantilla sin secretos. La API **no carga archivos `.env`**: `MONGO_CONNECTION_STRING` y `MONGO_DATABASE` se leen del entorno del proceso y tienen valores locales por defecto en `appsettings.Development.json`; también funcionan `Mongo__ConnectionString` y `Mongo__DatabaseName`. Las claves SMTP y CORS de la plantilla todavía no se enlazan. Compose fija los puertos de Mongo/Mailpit; los perfiles de `launchSettings.json` fijan los de la API.
 
 MongoDB y Mailpit solo publican puertos en `127.0.0.1`. Son servicios de prueba sin credenciales; no exponerlos a Internet. Los futuros correos usarán únicamente direcciones ficticias `example.test` y SMTP Mailpit.
 
@@ -67,7 +85,7 @@ npm run build
 npm test -- --watch=false
 ```
 
-Las pruebas actuales cubren bootstrap y reglas de dominio; no demuestran integración Mongo/SMTP ni el recorrido E2E final. Esos criterios permanecen pendientes en [ACCEPTANCE_TESTS.md](docs/ACCEPTANCE_TESTS.md).
+Las pruebas actuales cubren bootstrap, reglas de dominio e integración real con MongoDB (seed, índices, consultas, resumen, claim, CAS y concurrencia). No demuestran SMTP ni el recorrido E2E final. Esos criterios permanecen pendientes en [ACCEPTANCE_TESTS.md](docs/ACCEPTANCE_TESTS.md).
 
 ## Estructura y dependencias
 
@@ -87,4 +105,4 @@ La DI de ejemplo usa un reloj reemplazable. La arquitectura prevista está en [A
 
 Detener API y Angular con Ctrl+C. Desde la raíz, `docker compose stop` detiene Mongo y Mailpit sin eliminar el volumen Mongo. No usar `down -v` salvo que se quiera eliminar explícitamente los datos de prueba. Mailpit no tiene volumen persistente configurado: recrear su contenedor puede perder mensajes capturados.
 
-**Estado:** el dominio y la política de transición ya existen con pruebas. **Siguiente fase, solo con aprobación:** persistencia MongoDB y seed. No existe aún un comando de seed ni un flujo para demostrar los correos.
+**Estado:** dominio, política de transición y persistencia MongoDB con seed ya existen y tienen pruebas. **Siguiente fase, solo con aprobación:** correo Mailpit y orquestación crítica. Todavía no hay envío de correos ni endpoints de negocio.
