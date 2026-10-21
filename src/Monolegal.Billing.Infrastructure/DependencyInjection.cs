@@ -5,6 +5,7 @@ using Monolegal.Billing.Application.Customers;
 using Monolegal.Billing.Application.Email;
 using Monolegal.Billing.Application.Invoices;
 using Monolegal.Billing.Application.Notifications;
+using Monolegal.Billing.Application.Reminders;
 using Monolegal.Billing.Infrastructure.Mail;
 using Monolegal.Billing.Infrastructure.Mongo;
 using Monolegal.Billing.Infrastructure.Mongo.Repositories;
@@ -47,6 +48,8 @@ public static class DependencyInjection
         services.AddSingleton<IMongoIndexInitializer, MongoIndexInitializer>();
         services.AddSingleton<IDevelopmentDataSeeder, DevelopmentDataSeeder>();
         services.AddSingleton<IEmailSender, MailKitEmailSender>();
+        services.AddSingleton<IReminderIdGenerator, GuidReminderIdGenerator>();
+        services.AddTransient<ProcessInvoiceReminders>();
 
         return services;
     }
