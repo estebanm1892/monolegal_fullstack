@@ -1,15 +1,18 @@
+using Monolegal.Billing.Api;
 using Monolegal.Billing.Application;
 using Monolegal.Billing.Infrastructure;
 using Monolegal.Billing.Infrastructure.Seed;
 
-var seedRequested = args.Any(argument => string.Equals(argument, "--seed", StringComparison.OrdinalIgnoreCase));
-var resetRequested = args.Any(argument => string.Equals(argument, "--reset", StringComparison.OrdinalIgnoreCase));
-var hostArguments = args
-    .Where(argument => !string.Equals(argument, "--seed", StringComparison.OrdinalIgnoreCase)
-        && !string.Equals(argument, "--reset", StringComparison.OrdinalIgnoreCase))
-    .ToArray();
+var options = CommandLineOptions.Parse(args);
 
-var builder = WebApplication.CreateBuilder(hostArguments);
+if (!options.IsValid)
+{
+    Console.Error.WriteLine(options.ValidationError);
+    Environment.ExitCode = 1;
+    return;
+}
+
+var builder = WebApplication.CreateBuilder(options.HostArguments);
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<ITimeSource, SystemTimeSource>();
@@ -23,7 +26,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-if (seedRequested)
+if (options.Seed)
 {
     if (!app.Environment.IsDevelopment())
     {
@@ -32,14 +35,14 @@ if (seedRequested)
         return;
     }
 
-    if (resetRequested)
+    if (options.Reset)
     {
         Console.WriteLine("Reset requested: only the documented seed ids are deleted before seeding.");
     }
 
     await using var scope = app.Services.CreateAsyncScope();
     var seeder = scope.ServiceProvider.GetRequiredService<IDevelopmentDataSeeder>();
-    var report = await seeder.SeedAsync(resetRequested, CancellationToken.None);
+    var report = await seeder.SeedAsync(options.Reset, CancellationToken.None);
 
     Console.WriteLine(
         $"Seed completed: customersInserted={report.CustomersInserted}, invoicesInserted={report.InvoicesInserted}, customerCount={report.CustomerCount}, invoiceCount={report.InvoiceCount}");

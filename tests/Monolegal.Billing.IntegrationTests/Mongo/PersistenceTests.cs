@@ -288,7 +288,8 @@ public class PersistenceTests(MongoFixture fixture)
             InvoiceState.PrimerRecordatorio,
             InvoiceState.SegundoRecordatorio,
             NotificationAttemptStatus.Dispatching,
-            Now);
+            Now,
+            Details: "smtp accepted by mailpit");
 
         await db.Attempts.AddAsync(attempt, CancellationToken.None);
         var stored = await db.Attempts.FindAsync("attempt-1", CancellationToken.None);
@@ -302,6 +303,7 @@ public class PersistenceTests(MongoFixture fixture)
         Assert.True(updated);
         Assert.Equal(NotificationAttemptStatus.Completed, final!.Status);
         Assert.Equal(Now.AddMinutes(1), final.FinishedAt);
+        Assert.Equal("smtp accepted by mailpit", final.Details);
     }
 
     [Fact]

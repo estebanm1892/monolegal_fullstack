@@ -45,4 +45,7 @@ internal sealed class NotificationAttemptDocument
 
     [BsonElement("failureCode")]
     public string? FailureCode { get; set; }
+
+    [BsonElement("details")]
+    public string? Details { get; set; }
 }

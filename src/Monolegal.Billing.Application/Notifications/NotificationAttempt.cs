@@ -26,4 +26,5 @@ public sealed record NotificationAttempt(
     DateTimeOffset? SmtpAcceptedAt = null,
     DateTimeOffset? FinishedAt = null,
     string? MessageId = null,
-    string? FailureCode = null);
+    string? FailureCode = null,
+    string? Details = null);

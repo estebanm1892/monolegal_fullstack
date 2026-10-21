@@ -51,6 +51,7 @@ public sealed class MongoNotificationAuditRepository(MongoContext context) : INo
                 : null,
             MessageId = attempt.MessageId,
             FailureCode = attempt.FailureCode,
+            Details = attempt.Details,
         };
 
     private static NotificationAttempt ToDomain(NotificationAttemptDocument document) =>
@@ -67,5 +68,6 @@ public sealed class MongoNotificationAuditRepository(MongoContext context) : INo
             document.SmtpAcceptedAt is { } smtpAcceptedAt ? MongoMapping.ToOffset(smtpAcceptedAt) : null,
             document.FinishedAt is { } finishedAt ? MongoMapping.ToOffset(finishedAt) : null,
             document.MessageId,
-            document.FailureCode);
+            document.FailureCode,
+            document.Details);
 }
