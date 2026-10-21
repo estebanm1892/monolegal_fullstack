@@ -67,7 +67,7 @@ npm run build
 npm test -- --watch=false
 ```
 
-Las pruebas de bootstrap no demuestran las reglas de facturas, integración Mongo/SMTP ni el recorrido E2E final. Esos criterios permanecen pendientes en [ACCEPTANCE_TESTS.md](docs/ACCEPTANCE_TESTS.md).
+Las pruebas actuales cubren bootstrap y reglas de dominio; no demuestran integración Mongo/SMTP ni el recorrido E2E final. Esos criterios permanecen pendientes en [ACCEPTANCE_TESTS.md](docs/ACCEPTANCE_TESTS.md).
 
 ## Estructura y dependencias
 
@@ -87,4 +87,4 @@ La DI de ejemplo usa un reloj reemplazable. La arquitectura prevista está en [A
 
 Detener API y Angular con Ctrl+C. Desde la raíz, `docker compose stop` detiene Mongo y Mailpit sin eliminar el volumen Mongo. No usar `down -v` salvo que se quiera eliminar explícitamente los datos de prueba. Mailpit no tiene volumen persistente configurado: recrear su contenedor puede perder mensajes capturados.
 
-**Siguiente fase, solo con aprobación:** dominio y pruebas de transición. No existe aún un comando de seed ni un flujo para demostrar los correos.
+**Estado:** el dominio y la política de transición ya existen con pruebas. **Siguiente fase, solo con aprobación:** persistencia MongoDB y seed. No existe aún un comando de seed ni un flujo para demostrar los correos.
