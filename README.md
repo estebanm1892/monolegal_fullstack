@@ -62,9 +62,9 @@ Abrir `Monolegal.Billing.slnx`, seleccionar `Monolegal.Billing.Api` como proyect
 
 ### Configuración y seguridad
 
-`.env.example` es una plantilla sin secretos. La API **no carga archivos `.env`**: `MONGO_CONNECTION_STRING` y `MONGO_DATABASE` se leen del entorno del proceso y tienen valores locales por defecto en `appsettings.Development.json`; también funcionan `Mongo__ConnectionString` y `Mongo__DatabaseName`. Las claves SMTP y CORS de la plantilla todavía no se enlazan. Compose fija los puertos de Mongo/Mailpit; los perfiles de `launchSettings.json` fijan los de la API.
+`.env.example` es una plantilla sin secretos. La API **no carga archivos `.env`**: `MONGO_CONNECTION_STRING`, `MONGO_DATABASE` y `MAIL__*` se leen del entorno del proceso y tienen valores locales por defecto en `appsettings.Development.json`; también funcionan las claves jerárquicas estándar de .NET. CORS todavía no se enlaza. Compose fija los puertos de Mongo/Mailpit; los perfiles de `launchSettings.json` fijan los de la API.
 
-MongoDB y Mailpit solo publican puertos en `127.0.0.1`. Son servicios de prueba sin credenciales; no exponerlos a Internet. Los futuros correos usarán únicamente direcciones ficticias `example.test` y SMTP Mailpit.
+MongoDB y Mailpit solo publican puertos en `127.0.0.1`. Son servicios de prueba sin credenciales; no exponerlos a Internet. El adaptador SMTP rechaza hosts que no sean loopback, TLS, credenciales y direcciones fuera de `example.test`.
 
 ## Verificaciones
 
@@ -85,7 +85,7 @@ npm run build
 npm test -- --watch=false
 ```
 
-Las pruebas actuales cubren bootstrap, reglas de dominio e integración real con MongoDB (seed, índices, consultas, resumen, claim, CAS y concurrencia). No demuestran SMTP ni el recorrido E2E final. Esos criterios permanecen pendientes en [ACCEPTANCE_TESTS.md](docs/ACCEPTANCE_TESTS.md).
+Las pruebas actuales cubren bootstrap, reglas de dominio, integración real con MongoDB y las plantillas/validación segura de Mailpit. Todavía no demuestran el lote SMTP real ni el recorrido E2E final. Esos criterios permanecen pendientes en [ACCEPTANCE_TESTS.md](docs/ACCEPTANCE_TESTS.md).
 
 ## Estructura y dependencias
 
@@ -105,4 +105,4 @@ La DI de ejemplo usa un reloj reemplazable. La arquitectura prevista está en [A
 
 Detener API y Angular con Ctrl+C. Desde la raíz, `docker compose stop` detiene Mongo y Mailpit sin eliminar el volumen Mongo. No usar `down -v` salvo que se quiera eliminar explícitamente los datos de prueba. Mailpit no tiene volumen persistente configurado: recrear su contenedor puede perder mensajes capturados.
 
-**Estado:** dominio, política de transición y persistencia MongoDB con seed ya existen y tienen pruebas. **Siguiente fase, solo con aprobación:** correo Mailpit y orquestación crítica. Todavía no hay envío de correos ni endpoints de negocio.
+**Estado:** Fase 4 en curso. El contrato de correo, las plantillas por transición y el adaptador MailKit limitado a Mailpit local ya existen; la orquestación del lote todavía está pendiente. No hay endpoints de negocio ni ejecución automática.
