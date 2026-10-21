@@ -63,7 +63,7 @@ public sealed class MailOptionsValidator : IValidateOptions<MailOptions>
             var address = new MailAddress(value);
             return address.Address.EndsWith("@example.test", StringComparison.OrdinalIgnoreCase);
         }
-        catch (FormatException)
+        catch (Exception exception) when (exception is ArgumentException or FormatException)
         {
             return false;
         }

@@ -1,6 +1,8 @@
+using Microsoft.Extensions.Options;
 using Monolegal.Billing.Api;
 using Monolegal.Billing.Application;
 using Monolegal.Billing.Infrastructure;
+using Monolegal.Billing.Infrastructure.Mail;
 using Monolegal.Billing.Infrastructure.Seed;
 
 var options = CommandLineOptions.Parse(args);
@@ -20,6 +22,9 @@ builder.Services.AddMonolegalInfrastructure(builder.Configuration);
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+// Seed mode does not start the host, so force startup option validation before any data write.
+_ = app.Services.GetRequiredService<IOptions<MailOptions>>().Value;
 
 if (app.Environment.IsDevelopment())
 {

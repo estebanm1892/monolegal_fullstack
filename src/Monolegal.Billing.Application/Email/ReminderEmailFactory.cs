@@ -26,7 +26,7 @@ public static class ReminderEmailFactory
             _ => throw new InvalidOperationException("The invoice state transition does not produce a reminder email."),
         };
 
-        var amount = invoice.Amount.ToString("F2", CultureInfo.InvariantCulture);
+        var amount = invoice.Amount.ToString(CultureInfo.InvariantCulture);
         var body = $"""
             Hello {customer.Name},
 
