@@ -25,21 +25,21 @@ public class ApiBootstrapTests
         {
             using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
             Assert.True(document.RootElement.TryGetProperty("openapi", out _));
-            Assert.Empty(document.RootElement.GetProperty("paths").EnumerateObject());
+            Assert.True(document.RootElement.GetProperty("paths").EnumerateObject().Any());
         }
     }
 
     [Theory]
-    [InlineData("Development")]
-    [InlineData("Production")]
-    public async Task BootstrapDoesNotExposeReminderProcessing(string environment)
+    [InlineData("Development", HttpStatusCode.OK)]
+    [InlineData("Production", HttpStatusCode.Forbidden)]
+    public async Task BootstrapReminderProcessingIsDevelopmentOnly(string environment, HttpStatusCode expected)
     {
         await using var factory = CreateFactory(environment);
         using var client = factory.CreateClient();
 
         using var response = await client.PostAsync("/api/reminders/process", null);
 
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal(expected, response.StatusCode);
     }
 
     [Fact]

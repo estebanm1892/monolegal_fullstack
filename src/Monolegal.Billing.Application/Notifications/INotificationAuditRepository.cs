@@ -7,4 +7,6 @@ public interface INotificationAuditRepository
     Task<bool> UpdateAsync(NotificationAttempt attempt, CancellationToken cancellationToken);
 
     Task<NotificationAttempt?> FindAsync(string attemptId, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<NotificationAttempt>> FindByBatchIdAsync(string batchId, CancellationToken cancellationToken);
 }

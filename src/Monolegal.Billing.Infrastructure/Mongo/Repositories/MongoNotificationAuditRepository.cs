@@ -29,6 +29,18 @@ public sealed class MongoNotificationAuditRepository(MongoContext context) : INo
         return document is null ? null : ToDomain(document);
     }
 
+    public async Task<IReadOnlyList<NotificationAttempt>> FindByBatchIdAsync(
+        string batchId,
+        CancellationToken cancellationToken)
+    {
+        var documents = await context.Attempts
+            .Find(Builders<NotificationAttemptDocument>.Filter.Eq(document => document.BatchId, batchId))
+            .Sort(Builders<NotificationAttemptDocument>.Sort.Ascending(document => document.StartedAt))
+            .ToListAsync(cancellationToken);
+
+        return documents.Select(ToDomain).ToArray();
+    }
+
     private static NotificationAttemptDocument ToDocument(NotificationAttempt attempt) =>
         new()
         {

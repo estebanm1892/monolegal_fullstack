@@ -312,6 +312,12 @@ public class ProcessInvoiceRemindersTests
 
         public Task<NotificationAttempt?> FindAsync(string attemptId, CancellationToken cancellationToken) =>
             Task.FromResult(Stored.GetValueOrDefault(attemptId));
+
+        public Task<IReadOnlyList<NotificationAttempt>> FindByBatchIdAsync(
+            string batchId,
+            CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<NotificationAttempt>>(
+                Stored.Values.Where(a => a.BatchId == batchId).ToArray());
     }
 
     private sealed class FakeInvoiceRepository : IInvoiceRepository

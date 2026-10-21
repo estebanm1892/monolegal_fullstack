@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Options;
 using Monolegal.Billing.Api;
+using Monolegal.Billing.Api.Endpoints;
 using Monolegal.Billing.Application;
 using Monolegal.Billing.Infrastructure;
 using Monolegal.Billing.Infrastructure.Mail;
@@ -26,10 +28,17 @@ var app = builder.Build();
 // Seed mode does not start the host, so force startup option validation before any data write.
 _ = app.Services.GetRequiredService<IOptions<MailOptions>>().Value;
 
+app.UseStatusCodePages();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+app.MapCustomerEndpoints();
+app.MapInvoiceEndpoints();
+app.MapReminderEndpoints();
+app.MapHealthEndpoint();
 
 if (options.Seed)
 {
@@ -54,7 +63,6 @@ if (options.Seed)
     return;
 }
 
-// No notification route is registered until the guarded workflow is implemented.
 app.Run();
 
 public partial class Program { }
