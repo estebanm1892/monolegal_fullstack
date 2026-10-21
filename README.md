@@ -54,7 +54,7 @@ Para restaurar los estados iniciales de las 6 facturas de demostración:
 dotnet run --project src/Monolegal.Billing.Api -- --seed --reset
 ```
 
-`--reset` solo elimina los ids documentados del seed, es exclusivo del entorno Development y no debe usarse contra datos reales. La conexión se toma de `Mongo:ConnectionString` (`appsettings.Development.json`) y puede sobrescribirse con la variable de entorno `MONGO_CONNECTION_STRING`.
+`--reset` solo elimina los ids documentados del seed, es exclusivo del entorno Development y no debe usarse contra datos reales. `--reset` sin `--seed` falla con código 1 y un mensaje claro, sin iniciar la API. La conexión se toma de `Mongo:ConnectionString` (`appsettings.Development.json`) y puede sobrescribirse con la variable de entorno `MONGO_CONNECTION_STRING`.
 
 ### Visual Studio
 
