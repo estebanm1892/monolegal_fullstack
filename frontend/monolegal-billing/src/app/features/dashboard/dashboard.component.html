@@ -1,0 +1,150 @@
+<main class="dashboard" aria-labelledby="dashboard-title">
+  <h2 id="dashboard-title">Recordatorios de facturas</h2>
+
+  <!-- Tarjetas de resumen -->
+  <section class="cards" aria-label="Resumen de facturas">
+    <div class="card">
+      <h3>Total facturas</h3>
+      <p class="value">{{ summary()?.totalInvoices ?? 0 }}</p>
+    </div>
+    <div class="card">
+      <h3>Primer recordatorio</h3>
+      <p class="value">{{ summary()?.countByStatus['primerrecordatorio'] ?? 0 }}</p>
+    </div>
+    <div class="card">
+      <h3>Segundo recordatorio</h3>
+      <p class="value">{{ summary()?.countByStatus['segundorecordatorio'] ?? 0 }}</p>
+    </div>
+    <div class="card">
+      <h3>Desactivadas</h3>
+      <p class="value">{{ summary()?.countByStatus['desactivado'] ?? 0 }}</p>
+    </div>
+    <div class="card">
+      <h3>Total (COP)</h3>
+      <p class="value">{{ summary()?.totalAmountCop | number:'es-CO':'1.0-0' }}</p>
+    </div>
+  </section>
+
+  <!-- Mensaje de error -->
+  <div *ngIf="error()" class="alert alert-error" role="alert" aria-live="polite">
+    {{ error() }}
+  </div>
+
+  <!-- Filtros -->
+  <section class="filters" aria-label="Filtros de facturas">
+    <label for="filter-customer">Cliente</label>
+    <select
+      id="filter-customer"
+      [value]="selectedCustomer ?? ''"
+      (change)="onCustomerChange($event)"
+    >
+      <option value="">Todos</option>
+      <option *ngFor="let customer of customers()" [value]="customer.id">
+        {{ customer.name }}
+      </option>
+    </select>
+
+    <label for="filter-status">Estado</label>
+    <select
+      id="filter-status"
+      [value]="selectedStatus ?? ''"
+      (change)="onStatusChange($event)"
+    >
+      <option value="">Todos</option>
+      <option value="primerrecordatorio">Primer recordatorio</option>
+      <option value="segundorecordatorio">Segundo recordatorio</option>
+      <option value="desactivado">Desactivada</option>
+      <option value="pendiente">Pendiente</option>
+    </select>
+
+    <button type="button" (click)="onClearFilters()" [disabled]="!selectedCustomer && !selectedStatus">
+      Limpiar filtros
+    </button>
+  </section>
+
+  <!-- Estado de carga -->
+  <div *ngIf="loading()" class="loading" role="status" aria-live="polite">
+    Cargando...
+  </div>
+
+  <!-- Tabla de facturas -->
+  <section *ngIf="!loading() && !error()" class="invoices-table" aria-label="Lista de facturas">
+    <table aria-labelledby="invoices-title">
+      <caption id="invoices-title">Facturas</caption>
+      <thead>
+        <tr>
+          <th>Número</th>
+          <th>Cliente</th>
+          <th>Importe</th>
+          <th>Vencimiento</th>
+          <th>Estado</th>
+          <th>Actualizada</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let invoice of invoices(); trackBy: trackByInvoice">
+          <td>{{ invoice.number }}</td>
+          <td>{{ getCustomerName(invoice.customerId) }}</td>
+          <td>{{ formatMoney(invoice.amount) }}</td>
+          <td>{{ formatDate(invoice.dueAt) }}</td>
+          <td><span class="status-badge">{{ statusLabel(invoice.state) }}</span></td>
+          <td>{{ formatDate(invoice.updatedAt) }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="invoices().length === 0" class="empty" role="status" aria-live="polite">
+      No se encontraron facturas con los filtros seleccionados.
+    </div>
+
+    <!-- Paginación -->
+    <div class="pagination" *ngIf="(summary()?.totalInvoices ?? 0) > 10">
+      <button
+        type="button"
+        (click)="onPage(1)"
+        [disabled]="true"
+      >
+        Anterior
+      </button>
+      <span>Página {{ 1 }}</span>
+      <button
+        type="button"
+        (click)="onPage(1)"
+        [disabled]="true"
+      >
+        Siguiente
+      </button>
+    </div>
+  </section>
+
+  <!-- Acción de procesamiento -->
+  <section class="actions" aria-label="Procesar recordatorios">
+    <button
+      type="button"
+      data-testid="process-btn"
+      (click)="processReminders()"
+      [disabled]="processing()"
+      [aria-busy]="processing()"
+    >
+      {{ processing() ? 'Procesando...' : 'Procesar recordatorios' }}
+    </button>
+
+    <!-- Resultado -->
+    <div *ngIf="result()" class="result" role="status" aria-live="polite">
+      <h3>Resultado del lote</h3>
+      <p>
+        {{ result()!.succeeded }} enviados / {{ result()!.failed }} fallidos / {{ result()!.skipped }} omitidos /
+        {{ result()!.needsReview }} revisión necesaria
+      </p>
+      <div *ngIf="hasNeedsReview()" class="alert alert-review" role="alert">
+        Hay facturas que requieren revisión manual ({{ result()!.needsReview }}).
+      </div>
+      <ul>
+        <li *ngFor="let item of result()!.results; trackBy: trackByResult">
+          {{ item.invoiceId }}: {{ item.status }}
+          <span *ngIf="item.failureCode" class="failure">({{ item.failureCode }})</span>
+        </li>
+      </ul>
+    </div>
+  </section>
+</main>
