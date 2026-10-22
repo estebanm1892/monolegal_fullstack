@@ -1,0 +1,173 @@
+name: CI
+
+on:
+  push:
+    branches: [main, feat/*]
+  pull_request:
+    branches: [main]
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  ASPNETCORE_ENVIRONMENT: Development
+  MONGO_CONNECTION_STRING: mongodb://localhost:27017
+  MONGO_DATABASE: monolegal_billing
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:8.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      mailpit:
+        image: axllent/mailpit:v1.27.11
+        ports:
+          - 1025:1025
+          - 8025:8025
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build
+        run: dotnet build Monolegal.Billing.slnx -c Release
+
+      - name: Test (unit + integration)
+        run: dotnet test Monolegal.Billing.slnx -c Release --no-build
+
+  frontend:
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:8.0
+        ports:
+          - 27017:27017
+      mailpit:
+        image: axllent/mailpit:v1.27.11
+        ports:
+          - 1025:1025
+          - 8025:8025
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: 'npm'
+          cache-dependency-path: frontend/monolegal-billing/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend/monolegal-billing
+
+      - name: Build
+        run: npm run build
+        working-directory: frontend/monolegal-billing
+
+      - name: Test
+        run: npm test -- --watch=false
+        working-directory: frontend/monolegal-billing
+
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:8.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      mailpit:
+        image: axllent/mailpit:v1.27.11
+        ports:
+          - 1025:1025
+          - 8025:8025
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build API
+        run: dotnet build Monolegal.Billing.slnx -c Release
+
+      - name: Seed database
+        run: dotnet run --project src/Monolegal.Billing.Api -c Release -- --seed --reset
+        env:
+          ASPNETCORE_ENVIRONMENT: Development
+
+      - name: Start API
+        run: dotnet run --project src/Monolegal.Billing.Api -c Release --no-build &
+        env:
+          ASPNETCORE_ENVIRONMENT: Development
+        shell: bash
+
+      - name: Wait for API to be ready
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:5091/health > /dev/null; then
+              echo "API is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "API did not start in time"
+          exit 1
+
+      - name: Run first reminder batch
+        run: |
+          response=$(curl -s -X POST http://localhost:5091/api/reminders/process)
+          echo "Response: $response"
+          echo "$response" | grep -q '"succeeded":4'
+
+      - name: Verify Mailpit captured 4 messages
+        run: |
+          for i in $(seq 1 15); do
+            total=$(curl -sf http://localhost:8025/api/v1/messages | python3 -c "import sys,json; print(json.load(sys.stdin)['total'])")
+            if [ "$total" = "4" ]; then
+              echo "Mailpit has 4 messages"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Mailpit does not have 4 messages"
+          exit 1
+
+      - name: Verify Mongo invoice states
+        run: |
+          mongosh monolegal_billing --quiet --eval '
+            const f001 = db.facturas.findOne({_id: "FAC-001"}).estado;
+            const f002 = db.facturas.findOne({_id: "FAC-002"}).estado;
+            const f003 = db.facturas.findOne({_id: "FAC-003"}).estado;
+            const f005 = db.facturas.findOne({_id: "FAC-005"}).estado;
+            print("FAC-001: " + f001);
+            print("FAC-002: " + f002);
+            print("FAC-003: " + f003);
+            print("FAC-005: " + f005);
+            if (f001 === "segundorecordatorio" && f002 === "desactivado" && f003 === "segundorecordatorio" && f005 === "desactivado") {
+              print("STATES_OK");
+              quit(0);
+            }
+            print("STATES_NOT_OK");
+            quit(1);
+          '
+
+      - name: Stop API
+        run: pkill -f "dotnet.*Monolegal.Billing.Api" || true
+        if: always()
