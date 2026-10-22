@@ -20,7 +20,7 @@ public static class InvoiceEndpoints
             var query = new InvoiceQuery(page, pageSize, customerId, status);
             var result = await repository.ListAsync(query, ct);
 
-            var dtos = result.Items.Select(i => new InvoiceItemDto(new InvoiceDto(
+            var dtos = result.Items.Select(i => new InvoiceDto(
                 i.Id.Value,
                 i.CustomerId.Value,
                 i.Number,
@@ -29,7 +29,7 @@ public static class InvoiceEndpoints
                 i.UpdatedAt,
                 i.Amount,
                 i.Currency,
-                i.State.Persisted))).ToArray();
+                i.State.Persisted)).ToArray();
 
             return Results.Ok(new PagedInvoicesDto(
                 dtos,

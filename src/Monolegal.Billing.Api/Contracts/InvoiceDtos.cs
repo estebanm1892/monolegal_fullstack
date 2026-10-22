@@ -23,11 +23,8 @@ public sealed record InvoiceSummaryDto(
     IReadOnlyDictionary<string, long> CountByCustomer,
     decimal TotalAmountCop);
 
-public sealed record InvoiceItemDto(
-    InvoiceDto Invoice);
-
 public sealed record PagedInvoicesDto(
-    IReadOnlyList<InvoiceItemDto> Items,
+    IReadOnlyList<InvoiceDto> Items,
     int Page,
     int PageSize,
     long TotalCount,
