@@ -86,9 +86,9 @@
           <td>{{ invoice.number }}</td>
           <td>{{ getCustomerName(invoice.customerId) }}</td>
           <td>{{ formatMoney(invoice.amount) }}</td>
-          <td>{{ formatDate(invoice.dueAt) }}</td>
+          <td>{{ formatDateOnly(invoice.dueAt) }}</td>
           <td><span class="status-badge">{{ statusLabel(invoice.state) }}</span></td>
-          <td>{{ formatDate(invoice.updatedAt) }}</td>
+          <td>{{ formatTimestamp(invoice.updatedAt) }}</td>
         </tr>
       </tbody>
     </table>
@@ -98,19 +98,19 @@
     </div>
 
     <!-- Paginación -->
-    <div class="pagination" *ngIf="(summary()?.totalInvoices ?? 0) > 10">
+    <div class="pagination" *ngIf="totalPages() > 1">
       <button
         type="button"
-        (click)="onPage(1)"
-        [disabled]="true"
+        (click)="onPage(page() - 1)"
+        [disabled]="page() <= 1"
       >
         Anterior
       </button>
-      <span>Página {{ 1 }}</span>
+      <span>Página {{ page() }} de {{ totalPages() }}</span>
       <button
         type="button"
-        (click)="onPage(1)"
-        [disabled]="true"
+        (click)="onPage(page() + 1)"
+        [disabled]="page() >= totalPages()"
       >
         Siguiente
       </button>

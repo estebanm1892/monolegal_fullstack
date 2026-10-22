@@ -21,6 +21,8 @@ export class DashboardComponent {
   readonly error = this.service.error;
   readonly processing = this.service.processing;
   readonly result = this.service.result;
+  readonly page = this.service.page;
+  readonly totalPages = this.service.totalPages;
 
   selectedCustomer: string | null = null;
   selectedStatus: string | null = null;
@@ -98,7 +100,19 @@ export class DashboardComponent {
     }).format(value);
   }
 
-  formatDate(value: string): string {
+  // Date-only values (issued/due dates) are stored as UTC midnight, so they
+  // must be rendered in UTC; converting to local time would shift a day back.
+  formatDateOnly(value: string): string {
+    return new Date(value).toLocaleDateString('es-CO', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      timeZone: 'UTC',
+    });
+  }
+
+  // Timestamps (updatedAt) are real instants and are shown in local time.
+  formatTimestamp(value: string): string {
     return new Date(value).toLocaleDateString('es-CO', {
       day: '2-digit',
       month: '2-digit',

@@ -27,6 +27,9 @@ export class DashboardService {
   readonly error = signal<string | null>(null);
   readonly processing = signal(false);
   readonly result = signal<ProcessRemindersResult | null>(null);
+  readonly page = signal(1);
+  readonly totalPages = signal(0);
+  readonly totalCount = signal(0);
 
   private currentQuery: InvoiceQuery = {
     page: 1,
@@ -59,6 +62,9 @@ export class DashboardService {
     this.invoicesService.getInvoices(this.currentQuery).subscribe({
       next: (page) => {
         this.invoices.set(page.items);
+        this.page.set(page.page);
+        this.totalPages.set(page.totalPages);
+        this.totalCount.set(page.totalCount);
         this.loading.set(false);
       },
       error: (err) => {
@@ -91,6 +97,9 @@ export class DashboardService {
       next: (result) => {
         this.result.set(result);
         this.processing.set(false);
+        // Refresh the dashboard so counts, states and rows reflect the batch.
+        this.loadInvoices();
+        this.loadSummary();
       },
       error: (err) => {
         this.error.set(
@@ -107,6 +116,10 @@ export class DashboardService {
   }
 
   setPage(page: number): void {
+    const lastPage = this.totalPages();
+    if (page < 1 || (lastPage > 0 && page > lastPage)) {
+      return;
+    }
     this.currentQuery = { ...this.currentQuery, page };
     this.loadInvoices();
   }

@@ -17,6 +17,9 @@ function makeService(): DashboardService {
     error: signal<string | null>(null),
     processing: signal(false),
     result: signal<ProcessRemindersResult | null>(null),
+    page: signal(1),
+    totalPages: signal(0),
+    totalCount: signal(0),
     loadCustomers: () => {},
     loadInvoices: () => {},
     loadSummary: () => {},
@@ -68,7 +71,7 @@ describe('DashboardComponent', () => {
         number: 'FAC-001',
         issuedAt: '2026-09-01T00:00:00Z',
         dueAt: '2026-09-10T00:00:00Z',
-        updatedAt: '2026-10-01T00:00:00Z',
+        updatedAt: '2026-10-01T12:00:00Z',
         amount: 150000,
         currency: 'COP',
         state: 'primerrecordatorio',
@@ -82,6 +85,39 @@ describe('DashboardComponent', () => {
 
     expect(page.textContent).toContain('FAC-001');
     expect(page.textContent).toContain('Cliente A');
+    expect(page.textContent).toContain('150.000');
+    expect(page.textContent).toContain('10/09/2026');
+    expect(page.textContent).toContain('Primer recordatorio');
+  });
+
+  it('renders real pagination controls', async () => {
+    service.page.set(2);
+    service.totalPages.set(3);
+
+    const fixture = TestBed.createComponent(DashboardComponent);
+    fixture.autoDetectChanges(true);
+    await fixture.whenStable();
+    const page = fixture.nativeElement as HTMLElement;
+
+    expect(page.textContent).toContain('Página 2 de 3');
+    const buttons = Array.from(
+      page.querySelectorAll('.pagination button'),
+    ) as HTMLButtonElement[];
+    expect(buttons).toHaveLength(2);
+    expect(buttons[0].disabled).toBe(false);
+    expect(buttons[1].disabled).toBe(false);
+  });
+
+  it('hides pagination when there is a single page', async () => {
+    service.page.set(1);
+    service.totalPages.set(1);
+
+    const fixture = TestBed.createComponent(DashboardComponent);
+    fixture.autoDetectChanges(true);
+    await fixture.whenStable();
+    const page = fixture.nativeElement as HTMLElement;
+
+    expect(page.querySelector('.pagination')).toBeNull();
   });
 
   it('disables process button while processing', async () => {
