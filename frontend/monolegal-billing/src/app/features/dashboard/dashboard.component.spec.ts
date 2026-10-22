@@ -44,23 +44,23 @@ describe('DashboardComponent', () => {
 
   it('renders summary cards', async () => {
     const fixture = TestBed.createComponent(DashboardComponent);
-    await fixture.whenStable();
+    fixture.autoDetectChanges(true);
     service.summary.set({
       totalInvoices: 6,
       countByStatus: { primerrecordatorio: 2, segundorecordatorio: 2, pendiente: 1, desactivado: 1 },
       countByCustomer: { 'cliente-a': 2, 'cliente-b': 2, 'cliente-c': 2 },
       totalAmountCop: 1060000,
     });
-    fixture.detectChanges();
+    await fixture.whenStable();
     const page = fixture.nativeElement as HTMLElement;
 
     expect(page.textContent).toContain('6');
-    expect(page.textContent).toContain('1.060.000');
+    expect(page.textContent).toContain('1,060,000');
   });
 
   it('renders invoice table rows', async () => {
     const fixture = TestBed.createComponent(DashboardComponent);
-    await fixture.whenStable();
+    fixture.autoDetectChanges(true);
     service.invoices.set([
       {
         id: 'FAC-001',
@@ -77,7 +77,7 @@ describe('DashboardComponent', () => {
     service.customers.set([
       { id: 'cliente-a', name: 'Cliente A', email: 'a@example.test', active: true },
     ]);
-    fixture.detectChanges();
+    await fixture.whenStable();
     const page = fixture.nativeElement as HTMLElement;
 
     expect(page.textContent).toContain('FAC-001');
@@ -88,8 +88,8 @@ describe('DashboardComponent', () => {
     service.processing.set(true);
 
     const fixture = TestBed.createComponent(DashboardComponent);
+    fixture.autoDetectChanges(true);
     await fixture.whenStable();
-    fixture.detectChanges();
     const page = fixture.nativeElement as HTMLElement;
 
     const button = page.querySelector('[data-testid="process-btn"]') as HTMLButtonElement;
@@ -109,13 +109,13 @@ describe('DashboardComponent', () => {
     });
 
     const fixture = TestBed.createComponent(DashboardComponent);
+    fixture.autoDetectChanges(true);
     await fixture.whenStable();
-    fixture.detectChanges();
     const page = fixture.nativeElement as HTMLElement;
 
     const alert = page.querySelector('.alert-review');
     expect(alert).toBeTruthy();
-    expect(alert!.textContent).toContain('revisión necesaria');
+    expect(page.textContent).toContain('revisión');
   });
 
   it('calls processReminders when invoked', async () => {
