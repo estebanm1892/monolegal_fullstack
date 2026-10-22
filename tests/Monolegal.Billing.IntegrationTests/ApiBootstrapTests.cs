@@ -56,6 +56,50 @@ public class ApiBootstrapTests
         Assert.Same(clock, factory.Services.GetRequiredService<ITimeSource>());
     }
 
+    [Fact]
+    public async Task CorsPreflightAllowsTheLocalAngularOrigin()
+    {
+        await using var factory = CreateFactory("Development");
+        using var client = factory.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Options, "/api/reminders/process");
+        request.Headers.Add("Origin", "http://localhost:4200");
+        request.Headers.Add("Access-Control-Request-Method", "POST");
+
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.True(response.Headers.TryGetValues("Access-Control-Allow-Origin", out var origins));
+        Assert.Equal("http://localhost:4200", Assert.Single(origins));
+    }
+
+    [Fact]
+    public async Task CorsPreflightDoesNotAllowUnknownOrigins()
+    {
+        await using var factory = CreateFactory("Development");
+        using var client = factory.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Options, "/api/reminders/process");
+        request.Headers.Add("Origin", "http://not-the-local-frontend.test");
+        request.Headers.Add("Access-Control-Request-Method", "POST");
+
+        using var response = await client.SendAsync(request);
+
+        Assert.False(response.Headers.Contains("Access-Control-Allow-Origin"));
+    }
+
+    [Fact]
+    public async Task CorsIsNotEnabledOutsideDevelopment()
+    {
+        await using var factory = CreateFactory("Production");
+        using var client = factory.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Options, "/api/reminders/process");
+        request.Headers.Add("Origin", "http://localhost:4200");
+        request.Headers.Add("Access-Control-Request-Method", "POST");
+
+        using var response = await client.SendAsync(request);
+
+        Assert.False(response.Headers.Contains("Access-Control-Allow-Origin"));
+    }
+
     private static WebApplicationFactory<Program> CreateFactory(string environment) =>
         new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder.UseEnvironment(environment));
 

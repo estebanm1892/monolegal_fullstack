@@ -18,10 +18,18 @@ if (!options.IsValid)
 
 var builder = WebApplication.CreateBuilder(options.HostArguments);
 
+const string LocalFrontendCorsPolicy = "LocalFrontend";
+
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<ITimeSource, SystemTimeSource>();
 builder.Services.AddMonolegalInfrastructure(builder.Configuration);
 builder.Services.AddOpenApi();
+builder.Services.AddCors(cors => cors.AddPolicy(
+    LocalFrontendCorsPolicy,
+    policy => policy
+        .WithOrigins("http://localhost:4200")
+        .AllowAnyHeader()
+        .AllowAnyMethod()));
 
 var app = builder.Build();
 
@@ -32,6 +40,7 @@ app.UseStatusCodePages();
 
 if (app.Environment.IsDevelopment())
 {
+    app.UseCors(LocalFrontendCorsPolicy);
     app.MapOpenApi();
 }
 
