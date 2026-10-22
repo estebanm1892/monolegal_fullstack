@@ -51,7 +51,10 @@ public static class ReminderEndpoints
 
             if (!attempts.Any())
             {
-                return Results.NotFound();
+                return Results.Problem(
+                    title: "Reminder run not found",
+                    detail: $"No notification attempts were recorded for batch '{batchId}'.",
+                    statusCode: StatusCodes.Status404NotFound);
             }
 
             return Results.Ok(attempts.Select(a => new

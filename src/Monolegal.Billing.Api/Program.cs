@@ -24,6 +24,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<ITimeSource, SystemTimeSource>();
 builder.Services.AddMonolegalInfrastructure(builder.Configuration);
 builder.Services.AddOpenApi();
+builder.Services.AddProblemDetails();
 builder.Services.AddCors(cors => cors.AddPolicy(
     LocalFrontendCorsPolicy,
     policy => policy
@@ -36,6 +37,7 @@ var app = builder.Build();
 // Seed mode does not start the host, so force startup option validation before any data write.
 _ = app.Services.GetRequiredService<IOptions<MailOptions>>().Value;
 
+app.UseExceptionHandler();
 app.UseStatusCodePages();
 
 if (app.Environment.IsDevelopment())

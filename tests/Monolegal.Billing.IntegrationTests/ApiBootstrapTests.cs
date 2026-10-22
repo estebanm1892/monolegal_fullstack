@@ -100,6 +100,21 @@ public class ApiBootstrapTests
         Assert.False(response.Headers.Contains("Access-Control-Allow-Origin"));
     }
 
+    [Theory]
+    [InlineData("page=0&pageSize=10")]
+    [InlineData("page=1&pageSize=0")]
+    [InlineData("page=1&pageSize=101")]
+    public async Task InvalidPaginationReturnsProblemDetailsBadRequest(string query)
+    {
+        await using var factory = CreateFactory("Development");
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync($"/api/invoices?{query}");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+    }
+
     private static WebApplicationFactory<Program> CreateFactory(string environment) =>
         new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder.UseEnvironment(environment));
 

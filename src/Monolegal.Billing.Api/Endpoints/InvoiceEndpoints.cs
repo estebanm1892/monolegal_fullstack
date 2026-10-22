@@ -17,6 +17,22 @@ public static class InvoiceEndpoints
             string? status = null,
             CancellationToken ct = default) =>
         {
+            if (page < 1)
+            {
+                return Results.Problem(
+                    title: "Invalid pagination",
+                    detail: "page must be at least 1.",
+                    statusCode: StatusCodes.Status400BadRequest);
+            }
+
+            if (pageSize is < 1 or > InvoiceQuery.MaxPageSize)
+            {
+                return Results.Problem(
+                    title: "Invalid pagination",
+                    detail: $"pageSize must be between 1 and {InvoiceQuery.MaxPageSize}.",
+                    statusCode: StatusCodes.Status400BadRequest);
+            }
+
             var query = new InvoiceQuery(page, pageSize, customerId, status);
             var result = await repository.ListAsync(query, ct);
 
