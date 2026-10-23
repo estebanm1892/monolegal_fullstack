@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Options;
 using Monolegal.Billing.Api;
 using Monolegal.Billing.Api.Endpoints;
+using Monolegal.Billing.Api.OpenApi;
 using Monolegal.Billing.Application;
 using Monolegal.Billing.Infrastructure;
 using Monolegal.Billing.Infrastructure.Mail;
@@ -23,7 +24,22 @@ const string LocalFrontendCorsPolicy = "LocalFrontend";
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<ITimeSource, SystemTimeSource>();
 builder.Services.AddMonolegalInfrastructure(builder.Configuration);
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(openApi =>
+{
+    openApi.AddDocumentTransformer((document, _, _) =>
+    {
+        document.Info.Title = "Monolegal Billing API";
+        document.Info.Version = "v1";
+        document.Info.Description =
+            "API local de demostración para consultar facturas y ejecutar manualmente recordatorios individuales mediante Mailpit.";
+        return Task.CompletedTask;
+    });
+    openApi.AddOperationTransformer((operation, _, _) =>
+    {
+        OpenApiDocumentation.Document(operation);
+        return Task.CompletedTask;
+    });
+});
 builder.Services.AddProblemDetails();
 builder.Services.AddCors(cors => cors.AddPolicy(
     LocalFrontendCorsPolicy,
@@ -44,6 +60,11 @@ if (app.Environment.IsDevelopment())
 {
     app.UseCors(LocalFrontendCorsPolicy);
     app.MapOpenApi();
+    app.MapSwaggerUI("swagger", swagger =>
+    {
+        swagger.DocumentTitle = "Monolegal Billing API";
+        swagger.SwaggerEndpoint("/openapi/v1.json", "Monolegal Billing API v1");
+    });
 }
 
 app.MapCustomerEndpoints();

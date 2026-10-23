@@ -20,6 +20,11 @@ public static class CustomerEndpoints
             return Results.Ok(dtos);
         })
         .WithName("GetCustomers")
-        .WithOpenApi();
+        .WithTags("Clientes")
+        .WithSummary("Consultar clientes")
+        .WithDescription(
+            "Devuelve los clientes ficticios disponibles para consultar y relacionar las facturas del demo.")
+        .Produces<CustomerDto[]>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status500InternalServerError);
     }
 }

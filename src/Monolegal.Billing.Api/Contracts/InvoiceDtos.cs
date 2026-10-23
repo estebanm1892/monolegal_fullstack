@@ -45,3 +45,17 @@ public sealed record ReminderProcessResponseDto(
     int Skipped,
     int NeedsReview,
     IReadOnlyList<ReminderInvoiceResultDto> Results);
+
+public sealed record ReminderRunAttemptDto(
+    string AttemptId,
+    string InvoiceId,
+    string PreviousState,
+    string NextState,
+    int Status,
+    DateTimeOffset StartedAt,
+    DateTimeOffset? SmtpAcceptedAt,
+    DateTimeOffset? FinishedAt,
+    string? MessageId,
+    string? FailureCode);
+
+public sealed record HealthResponseDto(string Status);

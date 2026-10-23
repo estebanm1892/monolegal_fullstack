@@ -55,7 +55,13 @@ public static class InvoiceEndpoints
                 result.TotalPages));
         })
         .WithName("GetInvoices")
-        .WithOpenApi();
+        .WithTags("Facturas")
+        .WithSummary("Consultar facturas")
+        .WithDescription(
+            "Consulta paginada de facturas. Los filtros de cliente y estado son opcionales y solo afectan esta consulta.")
+        .Produces<PagedInvoicesDto>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status500InternalServerError);
 
         group.MapGet("/summary", async (
             IInvoiceRepository repository,
@@ -69,6 +75,11 @@ public static class InvoiceEndpoints
                 summary.TotalAmountCop));
         })
         .WithName("GetInvoiceSummary")
-        .WithOpenApi();
+        .WithTags("Facturas")
+        .WithSummary("Consultar estadísticas generales")
+        .WithDescription(
+            "Devuelve el resumen global de todas las facturas por estado y cliente, además del valor total en COP. No aplica los filtros del dashboard.")
+        .Produces<InvoiceSummaryDto>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status500InternalServerError);
     }
 }
