@@ -151,7 +151,7 @@ jobs:
 
       - name: Verify Mongo invoice states
         run: |
-          mongosh monolegal_billing --quiet --eval '
+          docker exec "${{ job.services.mongo.id }}" mongosh monolegal_billing --quiet --eval '
             const f001 = db.facturas.findOne({_id: "FAC-001"}).estado;
             const f002 = db.facturas.findOne({_id: "FAC-002"}).estado;
             const f003 = db.facturas.findOne({_id: "FAC-003"}).estado;
