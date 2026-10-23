@@ -1,8 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import {
-  HttpClient,
-  provideHttpClient,
-} from '@angular/common/http';
+import { HttpClient, provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { RemindersService } from './reminders.service';
 import { API_CONFIG } from './api-config.token';
@@ -80,5 +77,27 @@ describe('RemindersService', () => {
     );
     expect(req.request.method).toBe('GET');
     req.flush(expected);
+  });
+
+  it('normalizes numeric audit statuses returned by the API', () => {
+    service.getRun('batch-numeric').subscribe((got) => {
+      expect(got[0].status).toBe('Completed');
+    });
+
+    const req = controller.expectOne('http://test-api:5091/api/reminders/runs/batch-numeric');
+    req.flush([
+      {
+        attemptId: 'attempt-1',
+        invoiceId: 'FAC-001',
+        previousState: 'primerrecordatorio',
+        nextState: 'segundorecordatorio',
+        status: 3,
+        startedAt: null,
+        smtpAcceptedAt: null,
+        finishedAt: null,
+        messageId: null,
+        failureCode: null,
+      },
+    ]);
   });
 });

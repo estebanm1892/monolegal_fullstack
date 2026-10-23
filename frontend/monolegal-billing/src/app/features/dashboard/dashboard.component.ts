@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, ElementRef, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DashboardService } from './dashboard.service';
 import { CustomerDto } from '../../core/models/customer.model';
@@ -12,6 +12,7 @@ import { InvoiceDto } from '../../core/models/invoice.model';
   styleUrl: './dashboard.component.css',
 })
 export class DashboardComponent {
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly service = inject(DashboardService);
 
   readonly customers = this.service.customers;
@@ -23,6 +24,18 @@ export class DashboardComponent {
   readonly result = this.service.result;
   readonly page = this.service.page;
   readonly totalPages = this.service.totalPages;
+  readonly totalCount = this.service.totalCount;
+  readonly customersLoading = this.service.customersLoading;
+  readonly invoicesLoading = this.service.invoicesLoading;
+  readonly summaryLoading = this.service.summaryLoading;
+  readonly runDetailsLoading = this.service.runDetailsLoading;
+  readonly customersError = this.service.customersError;
+  readonly invoicesError = this.service.invoicesError;
+  readonly summaryError = this.service.summaryError;
+  readonly processingError = this.service.processingError;
+  readonly runDetailsError = this.service.runDetailsError;
+  readonly executionRows = this.service.executionRows;
+  readonly confirmationOpen = signal(false);
 
   selectedCustomer: string | null = null;
   selectedStatus: string | null = null;
@@ -50,8 +63,7 @@ export class DashboardComponent {
   onClearFilters(): void {
     this.selectedCustomer = null;
     this.selectedStatus = null;
-    this.service.setFilter('customerId', null);
-    this.service.setFilter('status', null);
+    this.service.clearFilters();
   }
 
   onPage(page: number): void {
@@ -76,10 +88,38 @@ export class DashboardComponent {
   }
 
   processReminders(): void {
-    if (!window.confirm('¿Procesar los recordatorios pendientes ahora?')) {
-      return;
-    }
+    this.confirmationOpen.set(true);
+    queueMicrotask(() => {
+      this.host.nativeElement
+        .querySelector<HTMLButtonElement>('[data-testid="confirm-process-btn"]')
+        ?.focus();
+    });
+  }
+
+  cancelProcessing(): void {
+    this.confirmationOpen.set(false);
+    queueMicrotask(() => {
+      this.host.nativeElement
+        .querySelector<HTMLButtonElement>('[data-testid="process-btn"]')
+        ?.focus();
+    });
+  }
+
+  confirmProcessing(): void {
+    this.confirmationOpen.set(false);
     this.service.processReminders();
+  }
+
+  expectedFirstTransitions(): number {
+    return this.summary()?.countByStatus['primerrecordatorio'] ?? 0;
+  }
+
+  expectedSecondTransitions(): number {
+    return this.summary()?.countByStatus['segundorecordatorio'] ?? 0;
+  }
+
+  expectedEmails(): number {
+    return this.expectedFirstTransitions() + this.expectedSecondTransitions();
   }
 
   statusLabel(state: string): string {
@@ -113,14 +153,42 @@ export class DashboardComponent {
 
   // Timestamps (updatedAt) are real instants and are shown in local time.
   formatTimestamp(value: string): string {
-    return new Date(value).toLocaleDateString('es-CO', {
+    return new Date(value).toLocaleString('es-CO', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   }
 
   hasNeedsReview(): boolean {
     return (this.result()?.needsReview ?? 0) > 0;
+  }
+
+  outcomeLabel(status: string): string {
+    const labels: Record<string, string> = {
+      Succeeded: 'Correo enviado y estado actualizado',
+      Completed: 'Procesada correctamente',
+      Failed: 'No se pudo procesar',
+      Skipped: 'Omitida',
+      NeedsReview: 'Requiere revisión manual',
+      Claimed: 'En preparación',
+      Dispatching: 'Envío iniciado',
+      SmtpAccepted: 'Correo aceptado; actualización pendiente',
+    };
+    return labels[status] ?? 'Resultado no reconocido';
+  }
+
+  outcomeClass(status: string): string {
+    return `outcome-${String(status).toLowerCase()}`;
+  }
+
+  resultStateLabel(state: string | null): string {
+    return state ? this.statusLabel(state) : 'No disponible';
+  }
+
+  resultValue(value: string | null): string {
+    return value ?? 'No disponible';
   }
 }

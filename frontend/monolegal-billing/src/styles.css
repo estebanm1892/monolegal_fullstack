@@ -1,7 +1,30 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 0;
+  max-width: 100%;
+}
+
 body {
   margin: 0;
+  min-width: 0;
+  max-width: 100%;
   background: #f6f8fb;
   color: #172033;
   font-family: system-ui, sans-serif;
   line-height: 1.6;
+}
+
+button,
+select {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
 }

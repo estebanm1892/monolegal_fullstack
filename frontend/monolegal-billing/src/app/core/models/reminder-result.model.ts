@@ -15,3 +15,20 @@ export interface ReminderProcessResponseDto {
   readonly needsReview: number;
   readonly results: readonly ReminderInvoiceResultDto[];
 }
+
+export interface ReminderRunItemDto {
+  readonly attemptId: string;
+  readonly invoiceId: string;
+  readonly previousState: string;
+  readonly nextState: string;
+  readonly status: ReminderAttemptStatus;
+  readonly startedAt: string | null;
+  readonly smtpAcceptedAt: string | null;
+  readonly finishedAt: string | null;
+  readonly messageId: string | null;
+  readonly failureCode: string | null;
+  readonly details: string | null;
+}
+
+export type ReminderAttemptStatus =
+  'Claimed' | 'Dispatching' | 'SmtpAccepted' | 'Completed' | 'Failed' | 'NeedsReview' | 'Unknown';

@@ -1,9 +1,37 @@
 import { HttpClient } from '@angular/common/http';
 import { Inject, Injectable, Optional } from '@angular/core';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { API_CONFIG } from './api-config.token';
 import { ApiConfig } from './api-config';
-import { ReminderProcessResponseDto } from '../models/reminder-result.model';
+import {
+  ReminderAttemptStatus,
+  ReminderProcessResponseDto,
+  ReminderRunItemDto,
+} from '../models/reminder-result.model';
+
+interface ReminderRunApiItem extends Omit<ReminderRunItemDto, 'status' | 'details'> {
+  readonly status: number | string;
+  readonly details?: string | null;
+}
+
+const attemptStatuses: readonly ReminderAttemptStatus[] = [
+  'Claimed',
+  'Dispatching',
+  'SmtpAccepted',
+  'Completed',
+  'Failed',
+  'NeedsReview',
+];
+
+function normalizeAttemptStatus(status: number | string): ReminderAttemptStatus {
+  if (typeof status === 'number') {
+    return attemptStatuses[status] ?? 'Unknown';
+  }
+
+  return attemptStatuses.includes(status as ReminderAttemptStatus)
+    ? (status as ReminderAttemptStatus)
+    : 'Unknown';
+}
 
 @Injectable()
 export class RemindersService {
@@ -16,52 +44,29 @@ export class RemindersService {
     }
   }
 
-  processReminders(): Observable<ProcessRemindersResult> {
-    return this.http.post<ProcessRemindersResult>(
+  processReminders(): Observable<ReminderProcessResponseDto> {
+    return this.http.post<ReminderProcessResponseDto>(
       `${this.apiConfig.baseUrl}/api/reminders/process`,
       null,
     );
   }
 
-  getRun(batchId: string): Observable<readonly {
-    readonly attemptId: string;
-    readonly invoiceId: string;
-    readonly previousState: string;
-    readonly nextState: string;
-    readonly status: string;
-    readonly startedAt: string | null;
-    readonly smtpAcceptedAt: string | null;
-    readonly finishedAt: string | null;
-    readonly messageId: string | null;
-    readonly failureCode: string | null;
-  }[]> {
-    return this.http.get<readonly {
-      readonly attemptId: string;
-      readonly invoiceId: string;
-      readonly previousState: string;
-      readonly nextState: string;
-      readonly status: string;
-      readonly startedAt: string | null;
-      readonly smtpAcceptedAt: string | null;
-      readonly finishedAt: string | null;
-      readonly messageId: string | null;
-      readonly failureCode: string | null;
-    }[]>(`${this.apiConfig.baseUrl}/api/reminders/runs/${encodeURIComponent(batchId)}`);
+  getRun(batchId: string): Observable<readonly ReminderRunItemDto[]> {
+    return this.http
+      .get<readonly ReminderRunApiItem[]>(
+        `${this.apiConfig.baseUrl}/api/reminders/runs/${encodeURIComponent(batchId)}`,
+      )
+      .pipe(
+        map((items) =>
+          items.map((item) => ({
+            ...item,
+            status: normalizeAttemptStatus(item.status),
+            details: item.details ?? null,
+          })),
+        ),
+      );
   }
 }
 
-export interface ProcessRemindersResult {
-  readonly batchId: string;
-  readonly totalCandidates: number;
-  readonly succeeded: number;
-  readonly failed: number;
-  readonly skipped: number;
-  readonly needsReview: number;
-  readonly results: readonly {
-    readonly invoiceId: string;
-    readonly status: string;
-    readonly attemptId: string | null;
-    readonly failureCode: string | null;
-    readonly details: string | null;
-  }[];
-}
+export type ProcessRemindersResult = ReminderProcessResponseDto;
+export type ReminderRunItem = ReminderRunItemDto;

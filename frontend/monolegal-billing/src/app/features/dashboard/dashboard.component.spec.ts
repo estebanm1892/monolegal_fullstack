@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
-import { signal } from '@angular/core';
+import { signal, WritableSignal } from '@angular/core';
 import { DashboardComponent } from './dashboard.component';
-import { DashboardService } from './dashboard.service';
+import { DashboardService, ProcessingResultRow } from './dashboard.service';
 import { CustomerDto } from '../../core/models/customer.model';
 import { InvoiceDto } from '../../core/models/invoice.model';
 import { InvoiceSummaryDto } from '../../core/models/summary.model';
@@ -20,6 +20,17 @@ function makeService(): DashboardService {
     page: signal(1),
     totalPages: signal(0),
     totalCount: signal(0),
+    customersLoading: signal(false),
+    invoicesLoading: signal(false),
+    summaryLoading: signal(false),
+    runDetailsLoading: signal(false),
+    customersError: signal<string | null>(null),
+    invoicesError: signal<string | null>(null),
+    summaryError: signal<string | null>(null),
+    processingError: signal<string | null>(null),
+    runDetailsError: signal<string | null>(null),
+    runDetails: signal([]),
+    executionRows: signal([] as ProcessingResultRow[]),
     loadCustomers: () => {},
     loadInvoices: () => {},
     loadSummary: () => {},
@@ -45,12 +56,21 @@ describe('DashboardComponent', () => {
     });
   });
 
+  function setExecutionRows(rows: ProcessingResultRow[]): void {
+    (service.executionRows as WritableSignal<readonly ProcessingResultRow[]>).set(rows);
+  }
+
   it('renders summary cards', async () => {
     const fixture = TestBed.createComponent(DashboardComponent);
     fixture.autoDetectChanges(true);
     service.summary.set({
       totalInvoices: 6,
-      countByStatus: { primerrecordatorio: 2, segundorecordatorio: 2, pendiente: 1, desactivado: 1 },
+      countByStatus: {
+        primerrecordatorio: 2,
+        segundorecordatorio: 2,
+        pendiente: 1,
+        desactivado: 1,
+      },
       countByCustomer: { 'cliente-a': 2, 'cliente-b': 2, 'cliente-c': 2 },
       totalAmountCop: 1060000,
     });
@@ -58,7 +78,18 @@ describe('DashboardComponent', () => {
     const page = fixture.nativeElement as HTMLElement;
 
     expect(page.textContent).toContain('6');
-    expect(page.textContent).toContain('1,060,000');
+    expect(page.textContent).toContain('1.060.000');
+    expect(page.textContent).toContain('Pendiente');
+    expect(page.textContent).toContain('Resumen global');
+  });
+
+  it('explains that filters do not limit global processing', async () => {
+    const fixture = TestBed.createComponent(DashboardComponent);
+    fixture.autoDetectChanges(true);
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.textContent).toContain('Los filtros solo modifican esta tabla');
+    expect(fixture.nativeElement.textContent).toContain('todas las facturas elegibles');
   });
 
   it('renders invoice table rows', async () => {
@@ -100,9 +131,7 @@ describe('DashboardComponent', () => {
     const page = fixture.nativeElement as HTMLElement;
 
     expect(page.textContent).toContain('Página 2 de 3');
-    const buttons = Array.from(
-      page.querySelectorAll('.pagination button'),
-    ) as HTMLButtonElement[];
+    const buttons = Array.from(page.querySelectorAll('.pagination button')) as HTMLButtonElement[];
     expect(buttons).toHaveLength(2);
     expect(buttons[0].disabled).toBe(false);
     expect(buttons[1].disabled).toBe(false);
@@ -154,11 +183,148 @@ describe('DashboardComponent', () => {
     expect(page.textContent).toContain('revisión');
   });
 
-  it('calls processReminders when invoked', async () => {
+  it('renders the latest execution as a table with real invoice and audit data', async () => {
+    service.result.set({
+      batchId: 'batch-123456789012345',
+      totalCandidates: 1,
+      succeeded: 1,
+      failed: 0,
+      skipped: 0,
+      needsReview: 0,
+      results: [],
+    });
+    setExecutionRows([
+      {
+        invoiceId: 'invoice-1',
+        invoiceNumber: 'FAC-001',
+        customerName: 'Cliente A',
+        previousState: 'primerrecordatorio',
+        nextState: 'segundorecordatorio',
+        status: 'Succeeded',
+        failureCode: null,
+        details: null,
+      },
+    ]);
+
     const fixture = TestBed.createComponent(DashboardComponent);
+    fixture.autoDetectChanges(true);
+    await fixture.whenStable();
+    const page = fixture.nativeElement as HTMLElement;
+
+    expect(page.textContent).toContain('Última ejecución');
+    expect(page.textContent).not.toContain('Lote batch-');
+    expect(page.textContent).toContain('Facturas actualizadas');
+    expect(page.textContent).toContain('FAC-001');
+    expect(page.textContent).toContain('Cliente A');
+    expect(page.textContent).toContain('Primer recordatorio');
+    expect(page.textContent).toContain('Segundo recordatorio');
+    expect(page.textContent).toContain('Correo enviado y estado actualizado');
+    expect(page.querySelector('.result-item')).toBeNull();
+
+    const technicalDetails = page.querySelector('.technical-details');
+    expect(technicalDetails?.textContent).toContain('batch-123456789012345');
+  });
+
+  it.each([
+    ['Failed', 'No se pudo procesar', 'smtp_rejected'],
+    ['Skipped', 'Omitida', 'claim_unavailable'],
+    ['NeedsReview', 'Requiere revisión manual', 'smtp_ambiguous'],
+  ])('renders %s outcomes without claiming success', async (status, expected, failureCode) => {
+    service.result.set({
+      batchId: 'batch-2',
+      totalCandidates: 1,
+      succeeded: 0,
+      failed: status === 'Failed' ? 1 : 0,
+      skipped: status === 'Skipped' ? 1 : 0,
+      needsReview: status === 'NeedsReview' ? 1 : 0,
+      results: [],
+    });
+    setExecutionRows([
+      {
+        invoiceId: 'invoice-2',
+        invoiceNumber: 'FAC-002',
+        customerName: 'Cliente A',
+        previousState: status === 'Skipped' ? null : 'segundorecordatorio',
+        nextState: status === 'Skipped' ? null : 'desactivado',
+        status,
+        failureCode,
+        details: null,
+      },
+    ]);
+
+    const fixture = TestBed.createComponent(DashboardComponent);
+    fixture.autoDetectChanges(true);
+    await fixture.whenStable();
+    const page = fixture.nativeElement as HTMLElement;
+
+    expect(page.textContent).toContain(expected);
+    expect(page.textContent).not.toContain('Correo enviado y estado actualizado');
+    if (status === 'Skipped') {
+      expect(page.textContent).toContain('No disponible');
+    }
+  });
+
+  it('shows an understandable empty state when no invoices were eligible', async () => {
+    service.result.set({
+      batchId: 'batch-empty',
+      totalCandidates: 0,
+      succeeded: 0,
+      failed: 0,
+      skipped: 0,
+      needsReview: 0,
+      results: [],
+    });
+
+    const fixture = TestBed.createComponent(DashboardComponent);
+    fixture.autoDetectChanges(true);
+    await fixture.whenStable();
+    const page = fixture.nativeElement as HTMLElement;
+
+    expect(page.textContent).toContain('No había facturas elegibles');
+    expect(page.querySelector('.result-table')).toBeNull();
+    expect(page.querySelector('.result-item')).toBeNull();
+  });
+
+  it('shows expected global transitions before processing', async () => {
+    service.summary.set({
+      totalInvoices: 6,
+      countByStatus: { primerrecordatorio: 2, segundorecordatorio: 2 },
+      countByCustomer: {},
+      totalAmountCop: 0,
+    });
+    const fixture = TestBed.createComponent(DashboardComponent);
+    fixture.autoDetectChanges(true);
     await fixture.whenStable();
 
-    service.processReminders();
+    const processButton = fixture.nativeElement.querySelector(
+      '[data-testid="process-btn"]',
+    ) as HTMLButtonElement;
+    processButton.click();
+    await fixture.whenStable();
+
+    const dialog = fixture.nativeElement.querySelector('[role="alertdialog"]');
+    expect(dialog).toBeTruthy();
+    expect(dialog.textContent).toContain('2 pasarán de Primer recordatorio a Segundo recordatorio');
+    expect(dialog.textContent).toContain('2 pasarán de Segundo recordatorio a Desactivada');
+    expect(dialog.textContent).toContain('4 correos');
+    expect((service as any).processRemindersWasCalled).toBe(false);
+
+    const confirmButton = fixture.nativeElement.querySelector(
+      '[data-testid="confirm-process-btn"]',
+    ) as HTMLButtonElement;
+    confirmButton.click();
+
     expect((service as any).processRemindersWasCalled).toBe(true);
+  });
+
+  it('uses semantic headings and an accessible table region', async () => {
+    const fixture = TestBed.createComponent(DashboardComponent);
+    fixture.autoDetectChanges(true);
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.querySelector('h1')).toBeTruthy();
+    const tableRegion = fixture.nativeElement.querySelector('.table-scroll');
+    expect(tableRegion?.getAttribute('tabindex')).toBe('0');
+    expect(tableRegion?.getAttribute('aria-label')).toContain('desplazamiento');
   });
 });
