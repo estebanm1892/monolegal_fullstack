@@ -227,7 +227,7 @@ npm test -- --watch=false
 ```
 
 Suites actuales: 70 tests unitarios + 45 de integración en backend, 31 en frontend.
-CI en `.github/workflows/ci.yml` con jobs de backend, frontend y E2E; la ejecución en GitHub Actions queda pendiente del primer push.
+CI en `.github/workflows/ci.yml` con jobs de backend, frontend y E2E. La [ejecución verificada del commit `141c130`](https://github.com/estebanm1892/monolegal_fullstack/actions/runs/40023048067) terminó correctamente en los tres jobs.
 
 ## Estructura y dependencias
 
