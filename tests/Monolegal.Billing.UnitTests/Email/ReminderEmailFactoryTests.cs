@@ -21,12 +21,13 @@ public class ReminderEmailFactoryTests
 
         Assert.Equal("customer-a@example.test", message.RecipientAddress);
         Assert.Equal("Customer A", message.RecipientName);
-        Assert.Equal("Invoice FAC-100: second reminder", message.Subject);
+        Assert.Equal("Segundo recordatorio de pago – Factura FAC-100", message.Subject);
         Assert.Contains("Customer A", message.TextBody);
         Assert.Contains("FAC-100", message.TextBody);
-        Assert.Contains("150000 COP", message.TextBody);
-        Assert.Contains("primerrecordatorio", message.TextBody);
-        Assert.Contains("segundorecordatorio", message.TextBody);
+        Assert.Contains("150.000 pesos colombianos (COP)", message.TextBody);
+        Assert.Contains("factura quedará en segundo recordatorio", message.TextBody);
+        Assert.DoesNotContain("primerrecordatorio", message.TextBody, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("segundorecordatorio", message.TextBody, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -36,10 +37,14 @@ public class ReminderEmailFactoryTests
 
         var message = ReminderEmailFactory.Create(Customer, invoice, InvoiceState.Desactivado);
 
-        Assert.Equal("Invoice FAC-100: final reminder", message.Subject);
-        Assert.Contains("segundorecordatorio", message.TextBody);
-        Assert.Contains("desactivado", message.TextBody);
-        Assert.DoesNotContain("second reminder", message.Subject, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Aviso de desactivación – Factura FAC-100", message.Subject);
+        Assert.Contains("Customer A", message.TextBody);
+        Assert.Contains("FAC-100", message.TextBody);
+        Assert.Contains("150.000 pesos colombianos (COP)", message.TextBody);
+        Assert.Contains("factura quedará desactivada", message.TextBody);
+        Assert.DoesNotContain("segundorecordatorio", message.TextBody, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("cuenta", message.TextBody, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Segundo recordatorio de pago", message.Subject);
     }
 
     [Fact]
@@ -57,7 +62,7 @@ public class ReminderEmailFactoryTests
 
         var message = ReminderEmailFactory.Create(Customer, invoice, InvoiceState.SegundoRecordatorio);
 
-        Assert.Contains("123.456 COP", message.TextBody);
+        Assert.Contains("123,456 pesos colombianos (COP)", message.TextBody);
     }
 
     private static Invoice CreateInvoice(InvoiceState state) => new(

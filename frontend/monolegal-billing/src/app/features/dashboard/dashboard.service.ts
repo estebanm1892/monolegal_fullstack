@@ -76,8 +76,11 @@ export class DashboardService {
         invoiceId: postResult.invoiceId,
         invoiceNumber: invoice?.number ?? null,
         customerName: customer?.name ?? null,
-        previousState: audit?.previousState ?? null,
-        nextState: audit?.nextState ?? null,
+        previousState: postResult.status === 'Skipped' ? null : (audit?.previousState ?? null),
+        nextState:
+          postResult.status === 'Succeeded' && audit?.status === 'Completed'
+            ? audit.nextState
+            : null,
         status: postResult.status,
         failureCode: postResult.failureCode ?? audit?.failureCode ?? null,
         details: postResult.details ?? audit?.details ?? null,

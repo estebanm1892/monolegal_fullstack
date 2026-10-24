@@ -195,7 +195,7 @@
             <th scope="col">Factura</th>
             <th scope="col">Cliente</th>
             <th scope="col">Estado anterior</th>
-            <th scope="col">Estado nuevo</th>
+            <th scope="col">Estado tras el intento</th>
             <th scope="col">Notificación</th>
           </tr>
         </thead>
@@ -207,7 +207,9 @@
             </td>
             <td data-label="Cliente">{{ resultValue(item.customerName) }}</td>
             <td data-label="Estado anterior">{{ resultStateLabel(item.previousState) }}</td>
-            <td data-label="Estado nuevo">{{ resultStateLabel(item.nextState) }}</td>
+            <td data-label="Estado tras el intento">
+              {{ item.status === 'Succeeded' && item.nextState ? resultStateLabel(item.nextState) : resultStateOutcome(item.status) }}
+            </td>
             <td data-label="Notificación">
               <span class="result-status" [ngClass]="outcomeClass(item.status)">
                 {{ outcomeLabel(item.status) }}

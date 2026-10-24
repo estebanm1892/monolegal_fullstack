@@ -188,6 +188,19 @@ export class DashboardComponent {
     return state ? this.statusLabel(state) : 'No disponible';
   }
 
+  resultStateOutcome(status: string): string {
+    switch (status) {
+      case 'Failed':
+        return 'Estado no actualizado por este intento';
+      case 'NeedsReview':
+        return 'Resultado no confirmado';
+      case 'Skipped':
+        return 'No procesada';
+      default:
+        return 'Detalle del estado no disponible';
+    }
+  }
+
   resultValue(value: string | null): string {
     return value ?? 'No disponible';
   }

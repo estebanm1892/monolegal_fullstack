@@ -253,6 +253,51 @@ describe('DashboardService', () => {
     ]);
   });
 
+  it.each([
+    ['Failed', 'Failed'],
+    ['NeedsReview', 'NeedsReview'],
+  ])('does not present the planned state as confirmed for %s', (status, auditStatus) => {
+    remindersService.processReminders = () =>
+      of({
+        batchId: 'batch-uncertain',
+        totalCandidates: 1,
+        succeeded: 0,
+        failed: status === 'Failed' ? 1 : 0,
+        skipped: 0,
+        needsReview: status === 'NeedsReview' ? 1 : 0,
+        results: [{ invoiceId: 'invoice-1', status, attemptId: 'attempt-1', failureCode: 'smtp_error', details: 'Send failed' }],
+      });
+    remindersService.getRun = () =>
+      of([{ invoiceId: 'invoice-1', attemptId: 'attempt-1', previousState: 'segundorecordatorio', nextState: 'desactivado', status: auditStatus, failureCode: 'smtp_error', details: null }]);
+
+    service.processReminders();
+
+    expect(service.executionRows()).toEqual([
+      expect.objectContaining({
+        previousState: 'segundorecordatorio',
+        nextState: null,
+        status,
+        failureCode: 'smtp_error',
+        details: 'Send failed',
+      }),
+    ]);
+    expect(service.runDetails()[0].nextState).toBe('desactivado');
+  });
+
+  it('does not invent states for an omitted invoice without an audit attempt', () => {
+    remindersService.processReminders = () =>
+      of({
+        batchId: 'batch-skipped', totalCandidates: 1, succeeded: 0, failed: 0, skipped: 1, needsReview: 0,
+        results: [{ invoiceId: 'invoice-1', status: 'Skipped', attemptId: null, failureCode: 'claim_unavailable', details: 'Not claimed' }],
+      });
+
+    service.processReminders();
+
+    expect(service.executionRows()).toEqual([
+      expect.objectContaining({ previousState: null, nextState: null, status: 'Skipped' }),
+    ]);
+  });
+
   it('ignores audit responses from an older execution', () => {
     const firstAudit = new Subject<never[]>();
     let processCall = 0;

@@ -9,3 +9,27 @@
 **/.angular/
 *.user
 *.suo
+
+# Internal working documents and agent instructions (keep public docs explicit).
+/AGENTS.md
+/README_AGENT_PACK.md
+/CONSTITUTION.md
+/IMPLEMENTATION_PLAN.md
+/DECISIONS_LOCKED.md
+/SPECIFICATION.md
+/ACCEPTANCE_TESTS.md
+/AUDITORIA_*.md
+/ARQUITECTURA_MONOLEGAL.md
+/ARQUITECTURA_MONOLEGAL.pdf
+/odd/
+/.atl/
+/.vscode/settings.json
+/docs/ARCHITECTURE_DECISIONS.md
+/docs/ACCEPTANCE_TESTS.md
+/docs/CONSTITUTION.md
+/docs/DECISIONS_LOCKED.md
+/docs/DELIVERY_CHECKLIST.md
+/docs/DELIVERY_EMAIL_DRAFT.md
+/docs/IMPLEMENTATION_PLAN.md
+/docs/RESULTS.md
+/docs/SPECIFICATION.md

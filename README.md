@@ -5,6 +5,8 @@ El flujo funcional es: el usuario dispara `Procesar recordatorios` desde el dash
 la API envía **un correo por factura elegible** a través de Mailpit (SMTP local) y
 **solo después de la aceptación SMTP** actualiza el estado de la factura.
 
+La arquitectura, las decisiones y sus límites se explican en [Arquitectura de la solución](docs/ARQUITECTURA.pdf).
+
 ## Requisitos
 
 - SDK .NET 10.0.402 (o Visual Studio 2026 con la carga de trabajo ASP.NET).
@@ -21,6 +23,7 @@ Desde la raíz del repositorio:
 ```powershell
 docker compose up -d
 dotnet build Monolegal.Billing.slnx
+dotnet run --project src/Monolegal.Billing.Api -- --seed
 dotnet run --project src/Monolegal.Billing.Api --launch-profile http
 ```
 
@@ -41,8 +44,8 @@ npm start -- --host localhost --port 4200
 | Mailpit | http://localhost:8025 | Interfaz de captura de los correos enviados |
 | MongoDB | `mongodb://localhost:27017` | Datos de demostración; requiere seed explícito |
 
-No hay scheduler ni envío automático: el único disparador es `POST /api/reminders/process`.
-El seed **no** corre al iniciar la API.
+No hay scheduler ni envío automático: el dashboard Angular confirma la acción manual y llama a
+`POST /api/reminders/process`. El seed **no** corre al iniciar la API.
 
 ## Reglas del proceso
 
@@ -82,6 +85,9 @@ sobrescribirse con `MONGO_CONNECTION_STRING`.
 Abrir `Monolegal.Billing.slnx`, seleccionar `Monolegal.Billing.Api` como proyecto de inicio y usar
 el perfil `http` con F5. El perfil `https` usa 7098 y puede requerir
 `dotnet dev-certs https --trust`. Angular se inicia desde su propia terminal, no desde Compose.
+En F5, comprobar `Hosting environment: Development` y que el directorio de contenido sea el
+proyecto `src/Monolegal.Billing.Api`; arrancar el ejecutable desde `bin/` sin perfil no carga
+`appsettings.Development.json` y deja MongoDB sin configuración.
 
 ## Restablecer la demo
 
@@ -151,8 +157,9 @@ Con la API en ejecución:
 Invoke-RestMethod 'http://localhost:5091/api/invoices/summary'
 ```
 
-El resumen debe mostrar los cuatro estados de la tabla anterior. La demo queda lista para
-disparar `Procesar recordatorios` desde Angular o `POST /api/reminders/process` desde Swagger.
+El resumen debe mostrar los cuatro estados de la tabla anterior. Para la prueba, iniciar Angular
+y usar su botón `Procesar recordatorios` con confirmación; la primera ejecución genera cuatro
+correos individuales, la segunda dos y la tercera ninguno.
 
 ## Swagger UI y OpenAPI
 
@@ -198,7 +205,11 @@ La paginación inválida devuelve `400` y los errores usan ProblemDetails
 `.env.example` es una plantilla sin secretos. La API **no carga archivos `.env`**:
 `MONGO_CONNECTION_STRING`, `MONGO_DATABASE` y `MAIL__*` se leen del entorno del proceso y tienen
 valores locales por defecto en `appsettings.Development.json`; también funcionan las claves
-jerárquicas estándar de .NET. Un `.env` real no se versiona.
+jerárquicas estándar de .NET (por ejemplo, `Mongo__ConnectionString`). Copiar `.env.example` a
+`.env` **no aplica** esas variables automáticamente a Visual Studio ni a `dotnet run`: configurarlas
+en el entorno del proceso si se quieren sobrescribir los valores de Development. Un `.env` real no
+se versiona. Los puertos de API/Angular se fijan en `launchSettings.json` y en el comando de Angular;
+el origen CORS está limitado en `Program.cs`, no se configura con una variable `.env`.
 
 CORS está habilitado solo en Development y limitado a `http://localhost:4200`. El `POST` de
 procesamiento responde `403` fuera de Development. MongoDB y Mailpit solo publican puertos en
@@ -226,8 +237,10 @@ npm run build
 npm test -- --watch=false
 ```
 
-Suites actuales: 70 tests unitarios + 45 de integración en backend, 31 en frontend.
-CI en `.github/workflows/ci.yml` con jobs de backend, frontend y E2E. La [ejecución verificada del commit `141c130`](https://github.com/estebanm1892/monolegal_fullstack/actions/runs/40023048067) terminó correctamente en los tres jobs.
+Verificación local de esta revisión: 70 tests unitarios + 45 de integración en backend y 34 en
+frontend. CI en `.github/workflows/ci.yml` con jobs de backend, frontend y E2E. La
+[ejecución verificada del commit `141c130`](https://github.com/estebanm1892/monolegal_fullstack/actions/runs/40023048067)
+terminó correctamente en los tres jobs; aún no verifica estas correcciones locales sin publicar.
 
 ## Estructura y dependencias
 

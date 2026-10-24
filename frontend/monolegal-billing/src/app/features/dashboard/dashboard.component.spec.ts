@@ -218,6 +218,7 @@ describe('DashboardComponent', () => {
     expect(page.textContent).toContain('Cliente A');
     expect(page.textContent).toContain('Primer recordatorio');
     expect(page.textContent).toContain('Segundo recordatorio');
+    expect(page.querySelector('td[data-label="Estado tras el intento"]')?.textContent).toContain('Segundo recordatorio');
     expect(page.textContent).toContain('Correo enviado y estado actualizado');
     expect(page.querySelector('.result-item')).toBeNull();
 
@@ -259,6 +260,15 @@ describe('DashboardComponent', () => {
 
     expect(page.textContent).toContain(expected);
     expect(page.textContent).not.toContain('Correo enviado y estado actualizado');
+    const stateCell = page.querySelector('td[data-label="Estado tras el intento"]');
+    const stateNotice = {
+      Failed: 'Estado no actualizado por este intento',
+      Skipped: 'No procesada',
+      NeedsReview: 'Resultado no confirmado',
+    }[status];
+    expect(stateCell?.textContent).toContain(stateNotice);
+    expect(stateCell?.textContent).not.toContain('Desactivada');
+    expect(page.textContent).toContain(failureCode);
     if (status === 'Skipped') {
       expect(page.textContent).toContain('No disponible');
     }
